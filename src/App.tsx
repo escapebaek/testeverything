@@ -12,6 +12,7 @@ import GamesHub from './pages/GamesHub';
 import PersonalityHub from './pages/PersonalityHub';
 import BlogList from './pages/BlogList';
 import BlogWrite from './pages/BlogWrite';
+import BlogPost from './pages/BlogPost';
 import DailyChallenge from './pages/DailyChallenge';
 import Leaderboard from './pages/Leaderboard';
 
@@ -231,6 +232,7 @@ function App() {
         <Route path="/personality" element={<Layout><PersonalityHub /></Layout>} />
         <Route path="/blog" element={<Layout><BlogList /></Layout>} />
         <Route path="/blog/write" element={<Layout><BlogWrite /></Layout>} />
+        <Route path="/blog/:id" element={<Layout><BlogPost /></Layout>} />
         <Route path="/challenge" element={<Layout><DailyChallenge /></Layout>} />
         <Route path="/leaderboard" element={<Layout><Leaderboard /></Layout>} />
         <Route path="/about" element={<Layout><AboutPage /></Layout>} />
