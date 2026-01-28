@@ -40,6 +40,7 @@ const SimonSays: React.FC = () => {
     if (phase === 'showing' && sequence.length > 0) {
       playSequence();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, sequence]);
 
   const handleButtonClick = (direction: Direction) => {

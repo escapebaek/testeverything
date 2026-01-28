@@ -18,26 +18,7 @@ const ColorBlindnessTest: React.FC = () => {
     { number: '6', description: 'Tests red-green deficiency', colors: { bg: '#95B272', fg: '#D06B6B' } },
   ];
 
-  const generateDots = (plateIndex: number) => {
-    const dots = [];
-    const plate = plates[plateIndex];
-    const digits = plate.number.split('');
-    
-    // Generate background dots
-    for (let i = 0; i < 120; i++) {
-      const x = 10 + Math.random() * 80;
-      const y = 10 + Math.random() * 80;
-      const size = 8 + Math.random() * 12;
-      dots.push({
-        x,
-        y,
-        size,
-        color: plate.colors.bg,
-      });
-    }
 
-    return dots;
-  };
 
   const handleAnswer = (answer: string) => {
     const newAnswers = [...answers, answer];
