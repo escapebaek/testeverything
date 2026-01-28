@@ -1,182 +1,229 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
+interface Target {
+  x: number;
+  y: number;
+  size: number;
+}
+
 const AimTrainer: React.FC = () => {
+  const [phase, setPhase] = useState<'ready' | 'playing' | 'finished'>('ready');
+  const [target, setTarget] = useState<Target | null>(null);
   const [score, setScore] = useState(0);
-  const [hits, setHits] = useState(0);
   const [misses, setMisses] = useState(0);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const [targetPosition, setTargetPosition] = useState<{ x: number; y: number } | null>(null);
-  const [timeLeft, setTimeLeft] = useState(30); // 30 seconds game
+  const [targetsHit, setTargetsHit] = useState(0);
+  const [totalTargets, setTotalTargets] = useState(20);
+  const [reactionTimes, setReactionTimes] = useState<number[]>([]);
+  const [targetSpawnTime, setTargetSpawnTime] = useState<number>(0);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const gameAreaRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const targetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const TARGET_SIZE = 50; // px
-  const TARGET_APPEAR_INTERVAL = 800; // ms
+  const getDifficultySettings = () => {
+    switch (difficulty) {
+      case 'easy': return { size: 60, targets: 15 };
+      case 'medium': return { size: 45, targets: 20 };
+      case 'hard': return { size: 30, targets: 25 };
+    }
+  };
 
-  const generateTargetPosition = useCallback(() => {
+  const spawnTarget = () => {
     if (!gameAreaRef.current) return;
-
-    const gameAreaWidth = gameAreaRef.current.offsetWidth;
-    const gameAreaHeight = gameAreaRef.current.offsetHeight;
-
-    const newX = Math.random() * (gameAreaWidth - TARGET_SIZE);
-    const newY = Math.random() * (gameAreaHeight - TARGET_SIZE);
-
-    setTargetPosition({ x: newX, y: newY });
-  }, []);
+    const settings = getDifficultySettings();
+    const rect = gameAreaRef.current.getBoundingClientRect();
+    const size = settings.size;
+    const x = Math.random() * (rect.width - size);
+    const y = Math.random() * (rect.height - size);
+    setTarget({ x, y, size });
+    setTargetSpawnTime(performance.now());
+  };
 
   const startGame = () => {
+    const settings = getDifficultySettings();
+    setPhase('playing');
     setScore(0);
-    setHits(0);
     setMisses(0);
-    setTimeLeft(30);
-    setGameStarted(true);
-    setGameOver(false);
-    generateTargetPosition();
-
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          clearInterval(targetTimerRef.current!); // Stop target generation
-          setGameOver(true);
-          setGameStarted(false);
-          setTargetPosition(null);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    targetTimerRef.current = setInterval(() => {
-      generateTargetPosition();
-    }, TARGET_APPEAR_INTERVAL);
+    setTargetsHit(0);
+    setTotalTargets(settings.targets);
+    setReactionTimes([]);
+    setTimeout(spawnTarget, 500);
   };
 
   const handleTargetClick = (e: React.MouseEvent) => {
-    if (!gameStarted || gameOver) return;
-    e.stopPropagation(); // Prevent click from bubbling to game area
-    setScore((prev) => prev + 1);
-    setHits((prev) => prev + 1);
-    generateTargetPosition(); // Immediately generate new target on hit
+    e.stopPropagation();
+    const reactionTime = performance.now() - targetSpawnTime;
+    setReactionTimes(prev => [...prev, reactionTime]);
+    setScore(prev => prev + Math.max(100 - Math.floor(reactionTime / 10), 10));
+    setTargetsHit(prev => prev + 1);
+
+    if (targetsHit + 1 >= totalTargets) {
+      setTarget(null);
+      setPhase('finished');
+    } else {
+      spawnTarget();
+    }
   };
 
-  const handleGameAreaClick = () => {
-    if (!gameStarted || gameOver) return;
-    setMisses((prev) => prev + 1);
+  const handleMiss = () => {
+    if (phase !== 'playing') return;
+    setMisses(prev => prev + 1);
+    setScore(prev => Math.max(0, prev - 25));
   };
 
-  const resetGame = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (targetTimerRef.current) clearInterval(targetTimerRef.current);
-    setScore(0);
-    setHits(0);
-    setMisses(0);
-    setTimeLeft(30);
-    setGameStarted(false);
-    setGameOver(false);
-    setTargetPosition(null);
+  const getAverageReactionTime = () => {
+    if (reactionTimes.length === 0) return 0;
+    return Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
+  };
+
+  const getAccuracy = () => {
+    const total = targetsHit + misses;
+    if (total === 0) return 100;
+    return Math.round((targetsHit / total) * 100);
   };
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Aim Trainer Test',
-          text: `I scored ${score} points in Aim Trainer with ${hits} hits and ${misses} misses! Can you beat me?`,
+          title: 'Aim Trainer',
+          text: `I scored ${score} points with ${getAccuracy()}% accuracy! Can you beat me?`,
           url: window.location.href,
         });
-        console.log('Shared successfully');
       } catch (error) {
         console.error('Error sharing:', error);
       }
     } else {
-      alert(`Share this link to challenge your friends: ${window.location.href}\n\n(Sharing not supported on this browser.)`);
+      navigator.clipboard.writeText(`I scored ${score} points on Aim Trainer! Try it: ${window.location.href}`);
+      alert('Link copied to clipboard!');
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (targetTimerRef.current) clearInterval(targetTimerRef.current);
-    };
-  }, []);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-8 font-sans text-white flex items-center justify-center">
-      <div className="max-w-4xl w-full mx-auto bg-white rounded-2xl shadow-xl p-8 mt-12 text-gray-800">
-        <h1 className="text-5xl font-bold text-center mb-8">Aim Trainer</h1>
+    <div className="min-h-screen pt-28 pb-12 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8">
+          <div className="text-center mb-6">
+            <Link to="/games" className="text-white/60 hover:text-white inline-flex items-center mb-4 transition-colors">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Games
+            </Link>
+            <h1 className="text-3xl font-bold text-white">Aim Trainer</h1>
+          </div>
 
-        {!gameStarted && !gameOver ? (
-          <div className="text-center">
-            <p className="text-2xl text-gray-700 mb-6">Click the targets as fast as you can!</p>
-            <button
-              onClick={startGame}
-              className="px-8 py-4 bg-blue-600 text-white text-xl font-bold rounded-full shadow-lg hover:bg-blue-700 transition duration-300"
-            >
-              Start Test
-            </button>
-          </div>
-        ) : gameOver ? (
-          <div className="text-center">
-            <p className="text-4xl font-bold text-green-600 mb-4">Game Over!</p>
-            <p className="text-2xl text-gray-700 mb-2">Final Score: <span className="font-extrabold text-blue-800">{score}</span></p>
-            <p className="text-2xl text-gray-700 mb-8">Hits: {hits} / Misses: {misses}</p>
-            <div className="flex flex-col space-y-4">
-              <button
-                onClick={resetGame}
-                className="px-8 py-4 bg-purple-600 text-white text-xl font-bold rounded-full shadow-lg hover:bg-purple-700 transition duration-300"
-              >
-                Play Again
-              </button>
-              <button
-                onClick={handleShare}
-                className="px-8 py-4 bg-green-600 text-white text-xl font-bold rounded-full shadow-lg hover:bg-green-700 transition duration-300"
-              >
-                Share Test
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-between text-2xl font-semibold mb-6">
-              <span>Score: {score}</span>
-              <span>Time Left: {timeLeft}s</span>
-            </div>
-            <div
-              ref={gameAreaRef}
-              className="relative w-full bg-gray-100 rounded-lg shadow-inner overflow-hidden cursor-crosshair"
-              style={{ height: '400px' }}
-              onClick={handleGameAreaClick}
-            >
-              {targetPosition && (
-                <div
-                  className="absolute bg-red-500 rounded-full flex items-center justify-center text-white text-xl font-bold cursor-pointer animate-pulse-once"
-                  style={{
-                    width: TARGET_SIZE,
-                    height: TARGET_SIZE,
-                    left: targetPosition.x,
-                    top: targetPosition.y,
-                  }}
-                  onClick={handleTargetClick}
+          {phase === 'ready' && (
+            <div className="text-center py-8">
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-white/10 flex items-center justify-center">
+                <span className="text-5xl">🎯</span>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">Test Your Aim</h2>
+              <p className="text-white/60 mb-6">Click the targets as fast as you can!</p>
+              
+              <div className="mb-8">
+                <label className="text-white/60 mr-4">Difficulty:</label>
+                <select
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
+                  className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-red-500/50"
                 >
-                  🎯
-                </div>
-              )}
-            </div>
-          </>
-        )}
+                  <option value="easy" className="bg-gray-800">Easy</option>
+                  <option value="medium" className="bg-gray-800">Medium</option>
+                  <option value="hard" className="bg-gray-800">Hard</option>
+                </select>
+              </div>
 
-        <div className="mt-8 text-center">
-          <Link to="/" className="inline-flex items-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-full shadow-md hover:bg-gray-300 transition duration-300">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H16a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back to Home
-          </Link>
+              <button
+                onClick={startGame}
+                className="px-8 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white text-xl font-bold rounded-2xl shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 hover:scale-105"
+              >
+                Start Game
+              </button>
+            </div>
+          )}
+
+          {phase === 'playing' && (
+            <>
+              <div className="flex justify-between mb-4 px-4">
+                <div className="text-white">
+                  <span className="text-white/60">Score: </span>
+                  <span className="font-bold text-cyan-400">{score}</span>
+                </div>
+                <div className="text-white">
+                  <span className="text-white/60">Targets: </span>
+                  <span className="font-bold">{targetsHit}/{totalTargets}</span>
+                </div>
+                <div className="text-white">
+                  <span className="text-white/60">Misses: </span>
+                  <span className="font-bold text-red-400">{misses}</span>
+                </div>
+              </div>
+
+              <div
+                ref={gameAreaRef}
+                className="relative h-96 bg-gradient-to-br from-white/5 to-white/0 rounded-2xl border border-white/10 cursor-crosshair overflow-hidden"
+                onClick={handleMiss}
+              >
+                {target && (
+                  <div
+                    className="absolute rounded-full bg-gradient-to-br from-red-500 to-pink-500 shadow-lg shadow-red-500/50 cursor-pointer transform hover:scale-110 transition-transform duration-100 flex items-center justify-center"
+                    style={{
+                      left: target.x,
+                      top: target.y,
+                      width: target.size,
+                      height: target.size,
+                    }}
+                    onClick={handleTargetClick}
+                  >
+                    <div className="w-2 h-2 bg-white rounded-full" />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {phase === 'finished' && (
+            <div className="text-center py-8">
+              <div className="mb-6">
+                <span className="text-6xl">🏆</span>
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-6">Game Over!</h2>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-xl mx-auto mb-8">
+                <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-3xl font-bold text-cyan-400">{score}</p>
+                  <p className="text-white/40 text-sm">Score</p>
+                </div>
+                <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-3xl font-bold text-green-400">{getAccuracy()}%</p>
+                  <p className="text-white/40 text-sm">Accuracy</p>
+                </div>
+                <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-3xl font-bold text-yellow-400">{getAverageReactionTime()}</p>
+                  <p className="text-white/40 text-sm">Avg ms</p>
+                </div>
+                <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-3xl font-bold text-red-400">{misses}</p>
+                  <p className="text-white/40 text-sm">Misses</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={startGame}
+                  className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold rounded-xl hover:shadow-red-500/30 transition-all duration-300"
+                >
+                  Play Again
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                >
+                  Share Result
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

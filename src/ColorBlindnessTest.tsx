@@ -1,196 +1,203 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-interface TestPlate {
-  id: number;
-  number: string;
-  mainColor: string;
-  hiddenColor: string;
-}
-
-const testPlates: TestPlate[] = [
-  { id: 1, number: '12', mainColor: '#8B0000', hiddenColor: '#006400' }, // Red-Green deficiency
-  { id: 2, number: '8', mainColor: '#006400', hiddenColor: '#8B0000' },  // Red-Green deficiency
-  { id: 3, number: '6', mainColor: '#00008B', hiddenColor: '#8B0000' },  // Blue-Yellow deficiency (less common)
-  { id: 4, number: '29', mainColor: '#8B0000', hiddenColor: '#006400' },
-  { id: 5, number: '5', mainColor: '#006400', hiddenColor: '#8B0000' },
-  { id: 6, number: '74', mainColor: '#8B0000', hiddenColor: '#006400' },
-];
-
 const ColorBlindnessTest: React.FC = () => {
-  const [currentPlateIndex, setCurrentPlateIndex] = useState(0);
-  const [userInput, setUserInput] = useState('');
-  const [score, setScore] = useState(0);
-  const [testStarted, setTestStarted] = useState(false);
-  const [testFinished, setTestFinished] = useState(false);
-  const [message, setMessage] = useState('');
+  const [currentPlate, setCurrentPlate] = useState(0);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [showResult, setShowResult] = useState(false);
 
-  const currentPlate = testPlates[currentPlateIndex];
+  // Ishihara-style test plates (simplified version)
+  const plates = [
+    { number: '12', description: 'Number visible to everyone', colors: { bg: '#8B9B52', fg: '#C75C5C' } },
+    { number: '8', description: 'Tests red-green deficiency', colors: { bg: '#B5C584', fg: '#CD7070' } },
+    { number: '29', description: 'Tests red-green deficiency', colors: { bg: '#7AA870', fg: '#CD8162' } },
+    { number: '5', description: 'Tests red-green deficiency', colors: { bg: '#9AAD6C', fg: '#C66A6A' } },
+    { number: '3', description: 'Tests red-green deficiency', colors: { bg: '#85A870', fg: '#D47B5C' } },
+    { number: '15', description: 'Tests red-green deficiency', colors: { bg: '#A5B879', fg: '#C86868' } },
+    { number: '74', description: 'Tests red-green deficiency', colors: { bg: '#88AA68', fg: '#CC7865' } },
+    { number: '6', description: 'Tests red-green deficiency', colors: { bg: '#95B272', fg: '#D06B6B' } },
+  ];
 
-  const startTest = () => {
-    setTestStarted(true);
-    setTestFinished(false);
-    setCurrentPlateIndex(0);
-    setScore(0);
-    setUserInput('');
-    setMessage('');
-  };
-
-  const handleSubmit = () => {
-    if (userInput === currentPlate.number) {
-      setScore(score + 1);
-      setMessage('Correct!');
-    } else {
-      setMessage(`Incorrect. The number was ${currentPlate.number}.`);
+  const generateDots = (plateIndex: number) => {
+    const dots = [];
+    const plate = plates[plateIndex];
+    const digits = plate.number.split('');
+    
+    // Generate background dots
+    for (let i = 0; i < 120; i++) {
+      const x = 10 + Math.random() * 80;
+      const y = 10 + Math.random() * 80;
+      const size = 8 + Math.random() * 12;
+      dots.push({
+        x,
+        y,
+        size,
+        color: plate.colors.bg,
+      });
     }
 
-    setTimeout(() => {
-      setUserInput('');
-      setMessage('');
-      if (currentPlateIndex < testPlates.length - 1) {
-        setCurrentPlateIndex(currentPlateIndex + 1);
-      } else {
-        setTestFinished(true);
-        setTestStarted(false);
+    return dots;
+  };
+
+  const handleAnswer = (answer: string) => {
+    const newAnswers = [...answers, answer];
+    setAnswers(newAnswers);
+
+    if (currentPlate < plates.length - 1) {
+      setCurrentPlate(prev => prev + 1);
+    } else {
+      setShowResult(true);
+    }
+  };
+
+  const calculateResult = () => {
+    let correct = 0;
+    plates.forEach((plate, index) => {
+      if (answers[index] === plate.number) {
+        correct++;
       }
-    }, 1500);
+    });
+    return {
+      correct,
+      total: plates.length,
+      percentage: Math.round((correct / plates.length) * 100),
+    };
+  };
+
+  const getResultMessage = (percentage: number) => {
+    if (percentage >= 90) return { text: 'Normal Color Vision', color: 'text-green-400', emoji: '✅' };
+    if (percentage >= 70) return { text: 'Mild Color Deficiency', color: 'text-yellow-400', emoji: '⚠️' };
+    if (percentage >= 50) return { text: 'Moderate Color Deficiency', color: 'text-orange-400', emoji: '🔶' };
+    return { text: 'Significant Color Deficiency', color: 'text-red-400', emoji: '🔴' };
   };
 
   const resetTest = () => {
-    setTestStarted(false);
-    setTestFinished(false);
-    setCurrentPlateIndex(0);
-    setScore(0);
-    setUserInput('');
-    setMessage('');
+    setCurrentPlate(0);
+    setAnswers([]);
+    setShowResult(false);
   };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Color Blindness Test',
-          text: `I scored ${score} out of ${testPlates.length} on the Color Blindness Test! Can you do better?`,
-          url: window.location.href,
-        });
-        console.log('Shared successfully');
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    } else {
-      alert(`Share this link to challenge your friends: ${window.location.href}\n\n(Sharing not supported on this browser.)`);
-    }
-  };
-
-  const generateDots = useCallback((plate: TestPlate) => {
-    const dots = [];
-    const numDots = 300; // Number of dots to draw
-    const radius = 150; // Radius of the circle
-
-    for (let i = 0; i < numDots; i++) {
-      const angle = Math.random() * 2 * Math.PI;
-      const r = Math.random() * radius;
-      const x = r * Math.cos(angle);
-      const y = r * Math.sin(angle);
-
-      const isHiddenDot = Math.random() < 0.3; // Probability of being a hidden number dot
-      const color = isHiddenDot ? plate.hiddenColor : plate.mainColor;
-
-      dots.push(
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            backgroundColor: color,
-            width: '8px',
-            height: '8px',
-            left: `calc(50% + ${x}px - 4px)`,
-            top: `calc(50% + ${y}px - 4px)`,
-          }}
-        ></div>
-      );
-    }
-    return dots;
-  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-8 font-sans text-white flex items-center justify-center">
-      <div className="max-w-2xl w-full mx-auto bg-white rounded-2xl shadow-xl p-8 mt-12 text-gray-800">
-        <h1 className="text-5xl font-bold text-center mb-8">Color Blindness Test</h1>
+    <div className="min-h-screen pt-28 pb-12 px-6">
+      <div className="max-w-2xl mx-auto">
+        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8">
+          <div className="text-center mb-6">
+            <Link to="/games" className="text-white/60 hover:text-white inline-flex items-center mb-4 transition-colors">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Games
+            </Link>
+            <h1 className="text-3xl font-bold text-white">Color Blindness Test</h1>
+          </div>
 
-        {!testStarted && !testFinished ? (
-          <div className="text-center">
-            <p className="text-2xl text-gray-700 mb-6">Identify the hidden number in each plate.</p>
-            <button
-              onClick={startTest}
-              className="px-8 py-4 bg-blue-600 text-white text-xl font-bold rounded-full shadow-lg hover:bg-blue-700 transition duration-300"
-            >
-              Start Test
-            </button>
-          </div>
-        ) : testFinished ? (
-          <div className="text-center">
-            <p className="text-4xl font-bold text-green-600 mb-4">Test Complete!</p>
-            <p className="text-2xl text-gray-700 mb-8">You scored {score} out of {testPlates.length}.</p>
-            <div className="flex flex-col space-y-4">
-              <button
-                onClick={resetTest}
-                className="px-8 py-4 bg-purple-600 text-white text-xl font-bold rounded-full shadow-lg hover:bg-purple-700 transition duration-300"
-              >
-                Try Again
-              </button>
-              <button
-                onClick={handleShare}
-                className="px-8 py-4 bg-green-600 text-white text-xl font-bold rounded-full shadow-lg hover:bg-green-700 transition duration-300"
-              >
-                Share Test
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="text-center mb-6">
-              <p className="text-2xl font-semibold">Plate {currentPlateIndex + 1} of {testPlates.length}</p>
-            </div>
-            <div className="relative w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden mb-6">
-              {/* Simplified representation of an Ishihara plate */}
-              <div className="absolute w-full h-full" style={{ backgroundColor: currentPlate.mainColor, opacity: 0.2 }}></div>
-              <div className="absolute w-full h-full flex items-center justify-center text-8xl font-extrabold" style={{ color: currentPlate.hiddenColor, mixBlendMode: 'multiply' }}>
-                {currentPlate.number}
+          {!showResult ? (
+            <>
+              <div className="text-center mb-4">
+                <span className="text-white/60">Plate {currentPlate + 1} of {plates.length}</span>
               </div>
-              {/* More complex dot generation could go here */}
-            </div>
-            <div className="text-center">
-              <input
-                type="text"
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                className="w-full max-w-xs p-3 text-center text-3xl rounded-lg border-2 border-gray-300 focus:outline-none focus:border-blue-500 text-gray-800"
-                placeholder="What number do you see?"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSubmit();
-                  }
-                }}
-              />
-              <button
-                onClick={handleSubmit}
-                className="mt-4 px-8 py-4 bg-green-600 text-white text-xl font-bold rounded-full shadow-lg hover:bg-green-700 transition duration-300"
-              >
-                Submit
-              </button>
-              {message && <p className="mt-4 text-xl font-semibold text-blue-700">{message}</p>}
-            </div>
-          </>
-        )}
 
-        <div className="mt-8 text-center">
-          <Link to="/" className="inline-flex items-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-full shadow-md hover:bg-gray-300 transition duration-300">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H16a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back to Home
-          </Link>
+              {/* Progress Bar */}
+              <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-full p-1 mb-8">
+                <div
+                  className="h-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                  style={{ width: `${((currentPlate + 1) / plates.length) * 100}%` }}
+                />
+              </div>
+
+              {/* Plate Display */}
+              <div className="flex justify-center mb-8">
+                <div 
+                  className="w-64 h-64 rounded-full relative overflow-hidden shadow-2xl"
+                  style={{ backgroundColor: plates[currentPlate].colors.bg }}
+                >
+                  {/* Simulated Ishihara plate with CSS */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span 
+                      className="text-8xl font-bold"
+                      style={{ 
+                        color: plates[currentPlate].colors.fg,
+                        textShadow: `0 0 20px ${plates[currentPlate].colors.fg}40`
+                      }}
+                    >
+                      {plates[currentPlate].number}
+                    </span>
+                  </div>
+                  {/* Dot overlay effect */}
+                  <svg className="absolute inset-0 w-full h-full opacity-30">
+                    {[...Array(80)].map((_, i) => (
+                      <circle
+                        key={i}
+                        cx={`${10 + Math.random() * 80}%`}
+                        cy={`${10 + Math.random() * 80}%`}
+                        r={4 + Math.random() * 6}
+                        fill={Math.random() > 0.5 ? plates[currentPlate].colors.bg : plates[currentPlate].colors.fg}
+                        opacity={0.5}
+                      />
+                    ))}
+                  </svg>
+                </div>
+              </div>
+
+              <p className="text-center text-white/60 mb-6">What number do you see?</p>
+
+              {/* Answer Options */}
+              <div className="grid grid-cols-4 gap-3">
+                {['12', '8', '29', '5', '3', '15', '74', '6', '?', ''].map((num) => (
+                  num && (
+                    <button
+                      key={num}
+                      onClick={() => handleAnswer(num)}
+                      className="py-4 bg-white/10 border border-white/20 rounded-xl text-white text-xl font-bold hover:bg-white/20 hover:border-white/40 transition-all duration-300"
+                    >
+                      {num}
+                    </button>
+                  )
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8">
+              {(() => {
+                const result = calculateResult();
+                const message = getResultMessage(result.percentage);
+                return (
+                  <>
+                    <div className="mb-6">
+                      <span className="text-6xl">{message.emoji}</span>
+                    </div>
+                    <h2 className={`text-2xl font-bold ${message.color} mb-2`}>{message.text}</h2>
+                    <p className="text-white/60 mb-8">
+                      You correctly identified {result.correct} out of {result.total} plates ({result.percentage}%)
+                    </p>
+
+                    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 mb-8 text-left">
+                      <h3 className="text-white font-bold mb-2">⚠️ Disclaimer</h3>
+                      <p className="text-white/50 text-sm">
+                        This is a simplified screening test and should not be used for medical diagnosis. 
+                        If you suspect color vision deficiency, please consult an eye care professional.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <button
+                        onClick={resetTest}
+                        className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-green-500/30 transition-all duration-300"
+                      >
+                        Take Again
+                      </button>
+                      <Link
+                        to="/games"
+                        className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                      >
+                        More Games
+                      </Link>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
         </div>
       </div>
     </div>

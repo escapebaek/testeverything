@@ -1,6 +1,29 @@
 import React from 'react';
 import { Analytics } from '@vercel/analytics/react';
-import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
+
+// Layout Components
+import Header from './components/Layout/Header';
+import Footer from './components/Layout/Footer';
+
+// Page Components
+import LandingPage from './components/LandingPage';
+import GamesHub from './pages/GamesHub';
+import PersonalityHub from './pages/PersonalityHub';
+import BlogList from './pages/BlogList';
+import BlogWrite from './pages/BlogWrite';
+import DailyChallenge from './pages/DailyChallenge';
+import Leaderboard from './pages/Leaderboard';
+
+// Personality Tests
+import MBTITest from './pages/personality/MBTITest';
+import StressTest from './pages/personality/StressTest';
+import EQTest from './pages/personality/EQTest';
+import LearningStyleTest from './pages/personality/LearningStyleTest';
+import DISCTest from './pages/personality/DISCTest';
+import LifeBalanceTest from './pages/personality/LifeBalanceTest';
+
+// Games (existing)
 import ReactionTime from './ReactionTime';
 import ColorPerception from './ColorPerception';
 import MemoryMatch from './MemoryMatch';
@@ -12,100 +35,219 @@ import ColorBlindnessTest from './ColorBlindnessTest';
 import AudioReactionTime from './AudioReactionTime';
 import ShapeRecognition from './ShapeRecognition';
 
-const HomePage: React.FC = () => {
-  const apps = [
-    { id: 'app1', name: 'Reaction Time', description: 'Test your reflexes with a simple reaction time challenge.', icon: '⚡' },
-    { id: 'app2', name: 'Color Perception', description: 'How well can you distinguish between subtle color differences?', icon: '🌈' },
-    { id: 'app3', name: 'Memory Match', description: 'A classic memory game to challenge your recall.', icon: '🧠' },
-    { id: 'app4', name: 'Typing Speed', description: 'Measure your words per minute and accuracy.', icon: '⌨️' },
-    { id: 'app5', name: 'Number Sequence', description: 'Can you remember and repeat the sequence of numbers?', icon: '🔢' },
-    { id: 'app6', name: 'Decision Maker', description: 'A quick tool to help you make simple choices.', icon: '🤔' },
-    { id: 'app7', name: 'Aim Trainer', description: 'Test your mouse accuracy and reaction time.', icon: '🎯' },
-    { id: 'app8', name: 'Color Blindness Test', description: 'Check your color vision with a simple test.', icon: '🎨' },
-    { id: 'app9', name: 'Audio Reaction Time', description: 'Test reaction speed to sound.', icon: '👂' },
-    { id: 'app10', name: 'Shape Recognition', description: 'Identify and match various shapes quickly.', icon: '🔺' },
-  ];
+// New Games
+import StroopTest from './StroopTest';
+import SimonSays from './SimonSays';
+import VerbalMemory from './VerbalMemory';
+import VisualMemory from './VisualMemory';
 
+// Layout wrapper component
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-8 font-sans">
-      <header className="text-center mb-16 pt-12">
-        <h1 className="text-6xl font-extrabold text-white leading-tight drop-shadow-lg">Test Everything</h1>
-        <p className="text-2xl text-blue-100 mt-4 opacity-90">A collection of simple, fun tests for your amusement</p>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        {apps.map((app) => (
-          <Link to={`/app/${app.id}`} key={app.id} className="block group">
-            <div className="bg-white rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col items-center text-center min-h-[180px]">
-              <div className="text-6xl mb-4 transition-transform duration-300 group-hover:rotate-6">{app.icon}</div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2 leading-snug">{app.name}</h2>
-              <p className="text-gray-600 text-lg flex-grow">{app.description}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      <footer className="text-center mt-20 text-white text-lg opacity-80">
-        <p>&copy; 2025 Test Everything. All rights reserved.</p>
-      </footer>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-grow">
+        {children}
+      </main>
+      <Footer />
     </div>
   );
 };
 
+// Game router component
+const GameRouter: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
 
+  const renderGame = () => {
+    switch (id) {
+      case 'app1': return <ReactionTime />;
+      case 'app2': return <ColorPerception />;
+      case 'app3': return <MemoryMatch />;
+      case 'app4': return <TypingSpeed />;
+      case 'app5': return <NumberSequence />;
+      case 'app6': return <DecisionMaker />;
+      case 'app7': return <AimTrainer />;
+      case 'app8': return <ColorBlindnessTest />;
+      case 'app9': return <AudioReactionTime />;
+      case 'app10': return <ShapeRecognition />;
+      case 'app11': return <StroopTest />;
+      case 'app12': return <SimonSays />;
+      case 'app13': return <VerbalMemory />;
+      case 'app14': return <VisualMemory />;
+      default:
+        return (
+          <div className="min-h-screen pt-28 pb-12 px-6 flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-white mb-4">Game Not Found</h1>
+              <p className="text-white/60">The game you're looking for doesn't exist.</p>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return renderGame();
+};
+
+// Personality test router
+const PersonalityRouter: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+
+  switch (id) {
+    case 'mbti': return <MBTITest />;
+    case 'stress': return <StressTest />;
+    case 'eq': return <EQTest />;
+    case 'learning': return <LearningStyleTest />;
+    case 'disc': return <DISCTest />;
+    case 'lifebalance': return <LifeBalanceTest />;
+    default:
+      return (
+        <div className="min-h-screen pt-28 pb-12 px-6 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-4">Test Not Found</h1>
+            <p className="text-white/60">The test you're looking for doesn't exist.</p>
+          </div>
+        </div>
+      );
+  }
+};
+
+// About page
+const AboutPage: React.FC = () => (
+  <div className="min-h-screen pt-28 pb-12 px-6">
+    <div className="max-w-4xl mx-auto">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+          About{' '}
+          <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+            TestEverything
+          </span>
+        </h1>
+        <p className="text-white/60 text-lg">
+          Discover your potential through science-based tests and games.
+        </p>
+      </div>
+      <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8">
+        <h2 className="text-2xl font-bold text-white mb-4">Our Mission</h2>
+        <p className="text-white/60 mb-6">
+          TestEverything is dedicated to helping you understand your cognitive abilities, personality traits, and potential through engaging, scientifically-designed assessments and brain training games.
+        </p>
+        <h2 className="text-2xl font-bold text-white mb-4">What We Offer</h2>
+        <ul className="space-y-3 text-white/60">
+          <li className="flex items-start">
+            <span className="text-cyan-400 mr-3">🎮</span>
+            <span><strong className="text-white">14+ Instant Games</strong> - Quick brain training exercises to improve your cognitive skills.</span>
+          </li>
+          <li className="flex items-start">
+            <span className="text-purple-400 mr-3">🧠</span>
+            <span><strong className="text-white">6 Personality Tests</strong> - Discover your personality type, emotional intelligence, and more.</span>
+          </li>
+          <li className="flex items-start">
+            <span className="text-yellow-400 mr-3">🏆</span>
+            <span><strong className="text-white">Daily Challenges</strong> - New challenges every day to keep you sharp.</span>
+          </li>
+          <li className="flex items-start">
+            <span className="text-green-400 mr-3">📊</span>
+            <span><strong className="text-white">Leaderboards</strong> - Compete with players worldwide and track your progress.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+);
+
+// Privacy policy
+const PrivacyPage: React.FC = () => (
+  <div className="min-h-screen pt-28 pb-12 px-6">
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-4xl font-bold text-white mb-8">Privacy Policy</h1>
+      <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
+        <section>
+          <h2 className="text-xl font-bold text-white mb-3">Information We Collect</h2>
+          <p className="text-white/60">
+            We collect minimal information necessary to provide our services. Test results are stored locally in your browser and are not sent to our servers.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-white mb-3">How We Use Your Information</h2>
+          <p className="text-white/60">
+            Any information collected is used solely to improve your experience and the accuracy of our assessments.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-white mb-3">Data Security</h2>
+          <p className="text-white/60">
+            We implement industry-standard security measures to protect your data. Your test results remain private and are never shared with third parties.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-white mb-3">Contact Us</h2>
+          <p className="text-white/60">
+            If you have any questions about our privacy practices, please contact us.
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+);
+
+// Terms of Service
+const TermsPage: React.FC = () => (
+  <div className="min-h-screen pt-28 pb-12 px-6">
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-4xl font-bold text-white mb-8">Terms of Service</h1>
+      <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
+        <section>
+          <h2 className="text-xl font-bold text-white mb-3">Acceptance of Terms</h2>
+          <p className="text-white/60">
+            By accessing and using TestEverything, you agree to be bound by these Terms of Service.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-white mb-3">Use of Services</h2>
+          <p className="text-white/60">
+            Our tests and games are provided for entertainment and educational purposes. Results should not be considered professional medical or psychological advice.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-white mb-3">Intellectual Property</h2>
+          <p className="text-white/60">
+            All content, including tests, games, and design elements, are the property of TestEverything and protected by copyright laws.
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+);
 
 function App() {
   return (
     <Router>
       <Analytics />
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/app/:id" element={<AppRouter />} />
+        {/* Main Pages with Layout */}
+        <Route path="/" element={<Layout><LandingPage /></Layout>} />
+        <Route path="/games" element={<Layout><GamesHub /></Layout>} />
+        <Route path="/personality" element={<Layout><PersonalityHub /></Layout>} />
+        <Route path="/blog" element={<Layout><BlogList /></Layout>} />
+        <Route path="/blog/write" element={<Layout><BlogWrite /></Layout>} />
+        <Route path="/challenge" element={<Layout><DailyChallenge /></Layout>} />
+        <Route path="/leaderboard" element={<Layout><Leaderboard /></Layout>} />
+        <Route path="/about" element={<Layout><AboutPage /></Layout>} />
+        <Route path="/privacy" element={<Layout><PrivacyPage /></Layout>} />
+        <Route path="/terms" element={<Layout><TermsPage /></Layout>} />
+        
+        {/* Games with Layout */}
+        <Route path="/games/:id" element={<Layout><GameRouter /></Layout>} />
+        
+        {/* Personality Tests with Layout */}
+        <Route path="/personality/:id" element={<Layout><PersonalityRouter /></Layout>} />
+        
+        {/* Legacy routes - redirect old paths */}
+        <Route path="/app/:id" element={<Layout><GameRouter /></Layout>} />
       </Routes>
     </Router>
   );
 }
-
-const AppRouter: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-
-  switch (id) {
-    case 'app1':
-      return <ReactionTime />;
-    case 'app2':
-      return <ColorPerception />;
-    case 'app3':
-      return <MemoryMatch />;
-    case 'app4':
-      return <TypingSpeed />;
-    case 'app5':
-      return <NumberSequence />;
-    case 'app6':
-      return <DecisionMaker />;
-    case 'app7':
-      return <AimTrainer />;
-    case 'app8':
-      return <ColorBlindnessTest />;
-    case 'app9':
-      return <AudioReactionTime />;
-    case 'app10':
-      return <ShapeRecognition />;
-    default:
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-8 font-sans text-white">
-          <div className="max-w-4xl mx-auto bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-2xl shadow-xl p-8 mt-12">
-            <h1 className="text-5xl font-bold mb-6">App Detail Page - {id}</h1>
-            <p className="text-xl mb-8">This is a placeholder for an individual application page. Imagine detailed features, screenshots, and more here!</p>
-            <Link to="/" className="inline-flex items-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-full shadow-md hover:bg-blue-100 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H16a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      );
-  }
-};
 
 export default App;
