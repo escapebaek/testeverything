@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { SEOHead, FAQStructuredData, BreadcrumbStructuredData } from '../components/SEO';
+import { AdBanner } from '../components/AdSense';
 
 const tests = [
   { 
@@ -60,6 +62,27 @@ const tests = [
 
 const PersonalityHub: React.FC = () => {
   return (
+    <>
+      <SEOHead
+        title="Free Personality Tests - MBTI, EQ, DISC & More"
+        description="Take free personality tests including MBTI, Emotional Intelligence (EQ), DISC Profile, Learning Style, Stress Level, and Life Balance assessments. Discover your true self!"
+        keywords="personality test, MBTI test, EQ test, DISC profile, learning style test, stress test, free personality quiz, personality assessment, self-discovery"
+        url="/personality"
+      />
+      <BreadcrumbStructuredData
+        items={[
+          { name: 'Home', url: '/' },
+          { name: 'Personality Tests', url: '/personality' },
+        ]}
+      />
+      <FAQStructuredData
+        faqs={[
+          { question: 'Are these personality tests free?', answer: 'Yes! All our personality tests are completely free to take without any registration required.' },
+          { question: 'How accurate are online personality tests?', answer: 'Our tests are based on established psychological frameworks like MBTI and DISC. While they provide valuable insights, they are best used for self-reflection rather than clinical diagnosis.' },
+          { question: 'Are my test results private?', answer: 'Absolutely. Your results are not stored on our servers. Everything is processed locally in your browser for complete privacy.' },
+          { question: 'Which personality test should I take first?', answer: 'We recommend starting with the MBTI test as it provides a comprehensive overview of your personality type. From there, you can explore specific areas like EQ or learning style.' },
+        ]}
+      />
     <div className="min-h-screen pt-28 pb-12 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -145,6 +168,11 @@ const PersonalityHub: React.FC = () => {
           </div>
         </div>
 
+        {/* Ad Banner */}
+        <div className="mt-8">
+          <AdBanner adSlot="2222222222" adFormat="horizontal" />
+        </div>
+
         {/* Disclaimer */}
         <div className="mt-8 text-center">
           <p className="text-white/40 text-sm max-w-2xl mx-auto">
@@ -154,7 +182,9 @@ const PersonalityHub: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
 export default PersonalityHub;
+

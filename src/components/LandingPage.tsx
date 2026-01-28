@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { SEOHead, FAQStructuredData } from './SEO';
+import { AdBanner } from './AdSense';
 
 const LandingPage: React.FC = () => {
   const features = [
     {
       icon: '🎮',
       title: 'Instant Games',
-      description: '10+ brain training games to test your reflexes, memory, and cognitive abilities.',
+      description: '14+ brain training games to test your reflexes, memory, and cognitive abilities.',
       link: '/games',
       gradient: 'from-cyan-500 to-blue-600',
       delay: '0ms',
@@ -46,6 +48,21 @@ const LandingPage: React.FC = () => {
   ];
 
   return (
+    <>
+      <SEOHead
+        title="TestEverything - Free Brain Games & Personality Tests Online"
+        description="Play 14+ free brain training games and take personality tests including MBTI, EQ, DISC and more. Challenge your mind, improve cognitive skills, and discover your true potential!"
+        keywords="brain games, personality test, MBTI, reaction time test, memory games, cognitive training, brain training, free online games, EQ test, stress test, focus games"
+        url="/"
+      />
+      <FAQStructuredData
+        faqs={[
+          { question: 'What is TestEverything?', answer: 'TestEverything is a free online platform offering brain training games and personality tests to help you discover and improve your cognitive abilities.' },
+          { question: 'Are all games and tests free?', answer: 'Yes! All our brain games and personality tests are completely free to use without registration.' },
+          { question: 'What types of games are available?', answer: 'We offer 14+ games including reaction time tests, memory games, typing speed tests, color perception tests, and more.' },
+          { question: 'What personality tests can I take?', answer: 'We offer MBTI, Emotional Intelligence (EQ), DISC Profile, Learning Style, Stress Level, and Life Balance assessments.' },
+        ]}
+      />
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24">
@@ -204,8 +221,17 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Bottom Ad Banner */}
+      <section className="py-8 px-6">
+        <div className="max-w-4xl mx-auto">
+          <AdBanner adSlot="3333333333" adFormat="horizontal" />
+        </div>
+      </section>
     </div>
+    </>
   );
 };
 
 export default LandingPage;
+

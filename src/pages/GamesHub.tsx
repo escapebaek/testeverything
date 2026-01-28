@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { SEOHead, FAQStructuredData, BreadcrumbStructuredData } from '../components/SEO';
+import { AdBanner } from '../components/AdSense';
 
 const games = [
   { id: 'app1', name: 'Reaction Time', description: 'Test your visual reflexes', icon: '⚡', color: 'from-cyan-500 to-blue-600', category: 'Reflex' },
@@ -28,6 +30,27 @@ const GamesHub: React.FC = () => {
     : games.filter(game => game.category === selectedCategory);
 
   return (
+    <>
+      <SEOHead
+        title="Brain Training Games - Test Your Cognitive Skills"
+        description="Play 14+ free brain training games to improve your memory, reaction time, focus, and more. Challenge yourself with cognitive assessments and track your progress."
+        keywords="brain games, cognitive training, memory games, reaction time test, brain training, mental exercises, focus games, brain puzzles"
+        url="/games"
+      />
+      <BreadcrumbStructuredData
+        items={[
+          { name: 'Home', url: '/' },
+          { name: 'Games', url: '/games' },
+        ]}
+      />
+      <FAQStructuredData
+        faqs={[
+          { question: 'Are these brain games free to play?', answer: 'Yes, all our brain training games are completely free to play without registration.' },
+          { question: 'Can brain games improve cognitive function?', answer: 'Research suggests that regular brain training can help maintain and potentially improve cognitive functions like memory, attention, and processing speed.' },
+          { question: 'How often should I play brain games?', answer: 'For best results, we recommend playing brain training games for 15-20 minutes daily.' },
+          { question: 'What types of games are available?', answer: 'We offer games testing memory, reaction time, visual perception, focus, and more - 14+ different game types in total.' },
+        ]}
+      />
     <div className="min-h-screen pt-28 pb-12 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -111,9 +134,16 @@ const GamesHub: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Ad Banner */}
+        <div className="mt-8">
+          <AdBanner adSlot="1111111111" adFormat="horizontal" />
+        </div>
       </div>
     </div>
+    </>
   );
 };
 
 export default GamesHub;
+
